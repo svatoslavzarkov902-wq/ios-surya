@@ -1,5 +1,14 @@
 # iOS 16 on sweet (Redmi Note 10 Pro, SM7150) - working notes
 
+## Separate `surya` port investigation (2026-10-22)
+
+This checkout is being used to investigate a POCO X3 NFC port. The initial
+read-only hardware comparison is in `docs/surya-port.md`. No `surya` boot image
+has been built or tested, and no phone partitions were changed in this work.
+The active touchscreen is Novatek over SPI, so the `sweet` Goodix I2C path
+must stay disabled during early bring-up. Next: obtain the matching stock
+`surya` DTB and verify the shim boot header before a diagnostic `fastboot boot`.
+
 ## Agent handoff / active work (2026-10-15, latest)
 
 ### >>> UPDATE 2026-10-18 (read first, then the 10-17 handoff below) <<<
