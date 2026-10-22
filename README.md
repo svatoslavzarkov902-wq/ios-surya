@@ -42,7 +42,7 @@ Full hardware register inventory: [docs/surya-port.md](docs/surya-port.md).
 
 | Area | Status | Technical Implementation |
 | :--- | :--- | :--- |
-| **Boot Chain** | Planned | Stock Xiaomi ABL → `fastboot boot shim-boot.img` (RAM only) → XNU. Nothing flashed to boot. |
+| **Boot Chain** | Working | Stock Xiaomi ABL → `fastboot boot shim-boot.img` (RAM only) → XNU. Nothing flashed to boot. |
 | **CPU / SMP** | Planned | All 8 Kryo 470 cores via PSCI, 16K translation granule, timers, GICv3 device interrupts. |
 | **GPU Acceleration** | Ported Tools | **Adreno 618**: Mesa Freedreno GLES 3.1 inside `backboardd` as `sweetgl.dylib`. CoreAnimation OpenGL ES renderer targets 30–60 FPS. |
 | **Display** | Prepared | Huaxing NT36672C panel (1080x2400) presented to iOS as iPhone X canvas (1125x2436). DSI DCS `0x51` backlight control. |
@@ -92,12 +92,29 @@ Download the official **iPhone X iOS 16.7.16 (20H392)** IPSW from Apple:
 
 ### 3. Generate Boot Shim & RAM Boot
 ```sh
-# Generate ADT and package payload
-python3 tools/mkadt.py surya
-./shim/build.sh
+# 1. Package payload with kernel, DTB, and tested boot args:
+# (rd=ufsroot0 ufsrw=1 rootrw=1 unentitled_ios_sim_launch=1 launchd_unsecure_cache=1 wdt=-1)
+python3 tools/mkpayload.py \
+  xnu/out/kernel.development.surya \
+  dtb/surya.dtb \
+  out/payload.bin \
+  "rd=ufsroot0 ufsrw=1 rootrw=1 unentitled_ios_sim_launch=1 launchd_unsecure_cache=1 wdt=-1 serial=0x3"
 
-# Temporary boot (RAM only — does NOT touch phone storage)
-fastboot boot shim-boot.img
+# 2. Package Android boot v2 image using standalone mkbootv2:
+python3 tools/mkbootv2.py \
+  --kernel shim/out/Image \
+  --ramdisk out/payload.bin \
+  --output out/surya-boot.img
+
+# 3. Boot in RAM via fastboot (does NOT touch boot partition):
+fastboot boot out/surya-boot.img
+```
+
+### 4. Flashing Large Rootfs to Userdata
+If fastboot fails on macOS reading large raw disk images:
+```sh
+python3 tools/img2simg.py /path/to/rootfs.img /path/to/rootfs.simg
+fastboot flash userdata /path/to/rootfs.simg
 ```
 
 ---
