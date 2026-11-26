@@ -28,7 +28,7 @@ jobs:
 
       - name: Download iOS 16.7.16 IPSW
         run: |
-          H="//cdn-apple.com"
+          H="cdn-apple.com"
           P="2026WinterFCS/fullrestores/122-41597"
           G="B4469AA9-8E2B-4A0C-BA2D-C16060246978"
           F="iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw"
