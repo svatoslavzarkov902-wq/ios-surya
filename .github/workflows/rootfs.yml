@@ -7,19 +7,16 @@ jobs:
   build-rootfs:
     runs-on: ubuntu-latest
     steps:
-      - name: Free up disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/android
-          df -h
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install dependencies and build apfs-fuse
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake git libfuse3-dev libbz2-dev zlib1g-dev libattr1-dev hfsprogs rsync p7zip-full curl jq zstd
-          git clone --recursive https://github.com /tmp/apfs-fuse
+          gh repo clone sgan81/apfs-fuse /tmp/apfs-fuse -- --recursive
           mkdir -p /tmp/apfs-fuse/build && cd /tmp/apfs-fuse/build
           cmake .. && make -j$(nproc)
           sudo cp apfs-fuse /usr/local/bin/
@@ -39,7 +36,7 @@ jobs:
           cd ipsw_extracted
           mapfile -t DMGS < <(find . -name "*.dmg" -size +500M -printf "%s %p\n" | sort -rn | awk '{print $2}')
           echo "Selected DMGs: ${DMGS[@]}"
-          sudo bash ../tools/mkiosroot.sh "${DMGS}" "${DMGS}" "${DMGS}" ../rootfs.img 12G
+          sudo bash ../tools/mkiosroot.sh "${DMGS}" "${DMGS}" "${DMGS}" ../rootfs.img 10G
           sudo chown $USER:$USER ../rootfs.img
 
       - name: Compress rootfs
