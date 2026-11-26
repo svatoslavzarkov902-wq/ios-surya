@@ -47,7 +47,8 @@ jobs:
           rm -f restore.ipsw
           cd ipsw_extracted
           mapfile -t DMGS < <(find . -name "*.dmg" -size +500M -printf "%s %p\n" | sort -rn | awk '{print $2}')
-          sudo bash ../tools/mkiosroot.sh "${DMGS[0]}" "${DMGS[1]}" "${DMGS[2]}" ../rootfs.img 15G
+          set -- "${DMGS[@]}"
+          sudo bash ../tools/mkiosroot.sh "$1" "$2" "$3" ../rootfs.img 15G
           sudo chown $USER:$USER ../rootfs.img
           cd ..
           rm -rf ipsw_extracted
