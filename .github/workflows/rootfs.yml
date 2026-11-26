@@ -1,0 +1,52 @@
+name: Build iOS RootFS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-rootfs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/android
+          df -h
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apfs-fuse hfsprogs rsync p7zip-full curl jq zstd
+
+      - name: Download iOS 16.7.16 IPSW for iPhone X
+        run: |
+          IPSW_URL=$(curl -s "https://ipsw.me" | jq -r '.firmwares[] | select(.version=="16.7.16" or .buildid=="20H392") | .url' | head -n 1)
+          echo "Downloading: $IPSW_URL"
+          curl -L --progress-bar "$IPSW_URL" -o restore.ipsw
+          ls -lh restore.ipsw
+
+      - name: Extract DMGs and build rootfs
+        run: |
+          mkdir -p ipsw_extracted
+          7z x restore.ipsw -oipsw_extracted "*.dmg" -r
+          rm -f restore.ipsw
+          cd ipsw_extracted
+          mapfile -t DMGS < <(find . -name "*.dmg" -size +500M -printf "%s %p\n" | sort -rn | awk '{print $2}')
+          echo "Selected DMGs: ${DMGS[@]}"
+          sudo bash ../tools/mkiosroot.sh "${DMGS}" "${DMGS}" "${DMGS}" ../rootfs.img 12G
+          sudo chown $USER:$USER ../rootfs.img
+
+      - name: Compress rootfs
+        run: |
+          zstd -T0 -6 rootfs.img -o rootfs.img.zst
+          ls -lh rootfs.img.zst
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-rootfs
+          path: rootfs.img.zst
+          retention-days: 5
+          
