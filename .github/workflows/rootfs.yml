@@ -7,6 +7,10 @@ jobs:
   build-rootfs:
     runs-on: ubuntu-latest
     steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/android
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -18,15 +22,13 @@ jobs:
           sudo apt-get install -y build-essential cmake git libfuse3-dev libbz2-dev zlib1g-dev libattr1-dev hfsprogs rsync p7zip-full curl jq zstd
           gh repo clone sgan81/apfs-fuse /tmp/apfs-fuse -- --recursive
           mkdir -p /tmp/apfs-fuse/build && cd /tmp/apfs-fuse/build
-          cmake .. && make -j$(nproc)
+          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make -j$(nproc)
           sudo cp apfs-fuse /usr/local/bin/
 
-      - name: Download iOS 16.7.16 IPSW for iPhone X
+      - name: Download iOS 16.7.16 IPSW
         run: |
           IPSW_URL=$(curl -s "https://ipsw.me" | jq -r '.firmwares[] | select(.version=="16.7.16" or .buildid=="20H392") | .url' | head -n 1)
-          echo "Downloading: $IPSW_URL"
-          curl -L --progress-bar "$IPSW_URL" -o restore.ipsw
-          ls -lh restore.ipsw
+          curl -L "$IPSW_URL" -o restore.ipsw
 
       - name: Extract DMGs and build rootfs
         run: |
@@ -35,7 +37,6 @@ jobs:
           rm -f restore.ipsw
           cd ipsw_extracted
           mapfile -t DMGS < <(find . -name "*.dmg" -size +500M -printf "%s %p\n" | sort -rn | awk '{print $2}')
-          echo "Selected DMGs: ${DMGS[@]}"
           sudo bash ../tools/mkiosroot.sh "${DMGS}" "${DMGS}" "${DMGS}" ../rootfs.img 10G
           sudo chown $USER:$USER ../rootfs.img
 
