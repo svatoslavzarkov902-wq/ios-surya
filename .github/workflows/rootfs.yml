@@ -7,10 +7,6 @@ jobs:
   build-rootfs:
     runs-on: ubuntu-latest
     steps:
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/android
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -22,7 +18,7 @@ jobs:
           sudo apt-get install -y build-essential cmake git libfuse3-dev libbz2-dev zlib1g-dev libattr1-dev hfsprogs rsync p7zip-full curl jq zstd
           gh repo clone sgan81/apfs-fuse /tmp/apfs-fuse -- --recursive
           mkdir -p /tmp/apfs-fuse/build && cd /tmp/apfs-fuse/build
-          cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make -j$(nproc)
+          CXXFLAGS="-include cstdint" cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make -j$(nproc)
           sudo cp apfs-fuse /usr/local/bin/
 
       - name: Download iOS 16.7.16 IPSW
