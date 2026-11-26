@@ -15,10 +15,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install dependencies and build apfs-fuse
         run: |
           sudo apt-get update
-          sudo apt-get install -y apfs-fuse hfsprogs rsync p7zip-full curl jq zstd
+          sudo apt-get install -y build-essential cmake git libfuse3-dev libbz2-dev zlib1g-dev libattr1-dev hfsprogs rsync p7zip-full curl jq zstd
+          git clone --recursive https://github.com /tmp/apfs-fuse
+          mkdir -p /tmp/apfs-fuse/build && cd /tmp/apfs-fuse/build
+          cmake .. && make -j$(nproc)
+          sudo cp apfs-fuse /usr/local/bin/
 
       - name: Download iOS 16.7.16 IPSW for iPhone X
         run: |
