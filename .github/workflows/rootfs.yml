@@ -15,7 +15,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git libfuse3-dev libbz2-dev zlib1g-dev libattr1-dev hfsprogs rsync p7zip-full curl jq zstd
+          sudo apt-get install -y build-essential cmake git libfuse3-dev libbz2-dev zlib1g-dev libattr1-dev hfsprogs rsync p7zip-full curl zstd
           gh repo clone sgan81/apfs-fuse /tmp/apfs-fuse -- --recursive
           mkdir -p /tmp/apfs-fuse/build && cd /tmp/apfs-fuse/build
           CXXFLAGS="-include cstdint" cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make -j$(nproc)
@@ -23,8 +23,8 @@ jobs:
 
       - name: Download iOS 16.7.16 IPSW
         run: |
-          IPSW_URL=$(curl -s "https://ipsw.me" | jq -r '.firmwares[] | select(.version=="16.7.16" or .buildid=="20H392") | .url' | head -n 1)
-          curl -L "$IPSW_URL" -o restore.ipsw
+          curl -fL "https://cdn-apple.com" -o restore.ipsw
+          ls -lh restore.ipsw
 
       - name: Extract DMGs and build rootfs
         run: |
